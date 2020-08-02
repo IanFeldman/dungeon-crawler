@@ -484,6 +484,9 @@ public:
 		return retVal;
 	}
 
+	// we added this baby
+	void Invert();
+
 	Matrix3& operator*=(const Matrix3& right)
 	{
 		*this = *this * right;

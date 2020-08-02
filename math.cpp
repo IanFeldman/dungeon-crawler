@@ -32,3 +32,32 @@ Vector2 Vector2::Transform(const Vector2& vec, const Matrix3& mat, float w /*= 1
 	//ignore w since we aren't returning a new value for it...
 	return retVal;
 }
+
+void Matrix3::Invert()
+{
+	// computes the inverse of a matrix m
+	double det = mat[0][0] * (mat[1][1] * mat[2][2] - mat[2][1] * mat[1][2]) -
+		mat[0][1] * (mat[1][0] * mat[2][2] - mat[1][2] * mat[2][0]) +
+		mat[0][2] * (mat[1][0] * mat[2][1] - mat[1][1] * mat[2][0]);
+
+	double invdet = 1 / det;
+
+	Matrix3 minv; // inverse of matrix m
+	minv.mat[0][0] = (mat[1][1] * mat[2][2] - mat[2][1] * mat[1][2]) * invdet;
+	minv.mat[0][1] = (mat[0][2] * mat[2][1] - mat[0][1] * mat[2][2]) * invdet;
+	minv.mat[0][2] = (mat[0][1] * mat[1][2] - mat[0][2] * mat[1][1]) * invdet;
+	minv.mat[1][0] = (mat[1][2] * mat[2][0] - mat[1][0] * mat[2][2]) * invdet;
+	minv.mat[1][1] = (mat[0][0] * mat[2][2] - mat[0][2] * mat[2][0]) * invdet;
+	minv.mat[1][2] = (mat[1][0] * mat[0][2] - mat[0][0] * mat[1][2]) * invdet;
+	minv.mat[2][0] = (mat[1][0] * mat[2][1] - mat[2][0] * mat[1][1]) * invdet;
+	minv.mat[2][1] = (mat[2][0] * mat[0][1] - mat[0][0] * mat[2][1]) * invdet;
+	minv.mat[2][2] = (mat[0][0] * mat[1][1] - mat[1][0] * mat[0][1]) * invdet;
+
+	for (int i = 0; i < 3; i++)
+	{
+		for (int j = 0; j < 3; j++)
+		{
+			mat[i][j] = minv.mat[i][j];
+		}
+	}
+}
