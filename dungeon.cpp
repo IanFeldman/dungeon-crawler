@@ -8,8 +8,8 @@
 
 Dungeon::Dungeon(Game* game)
 	:mGame(game)
-	,mRoomCount(50)
-	,mSize(200)
+	,mRoomCount(3)
+	,mSize(50)
 	,mTileSize(64)
 {
 }
@@ -69,6 +69,7 @@ void Dungeon::PlaceRooms()
 			{
 				std::cerr << std::endl;
 				std::cerr << "Error: over 100 room placement attempts" << std::endl;
+				std::cerr << "Stopping at " + std::to_string(positionedRooms.size()) + " rooms" << std::endl;
 				return;
 			}
 
@@ -207,8 +208,10 @@ void Dungeon::Passageways()
 
 	std::cout << "Done!" << std::endl;
 
-	std::cout << "Pathfinding...";
+	std::cout << "Pathfinding";
 
+	//std::cout << "Visualizing all " + std::to_string(mNodes.size()) + " nodes";
+	
 	// for each room
 	// pathfind from exit to exit of next room
 	for (class Room* r : mRooms)
@@ -220,6 +223,20 @@ void Dungeon::Passageways()
 		mPaths.push_back(PathFind(r->exit, r->nextRoom->exit));
 		std::cout << ".";
 	}
+	/*
+	int nodeCount = 0;
+	for (class Node* n : mNodes)
+	{
+		class Tile* _tile = new Tile(mGame);
+		_tile->SetPosition(n->pos);
+		_tile->GetComponent<SpriteComponent>()->SetTexture(mGame->GetTexture("assets/dungeon/wall.png"));
+		_tile->SetScale(1.0f);
+
+		nodeCount++;
+		if (nodeCount % 100 == 0)
+			std::cout << ".";
+	}
+	*/
 	std::cout << "Done!" << std::endl;
 }
 

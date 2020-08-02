@@ -9,7 +9,7 @@ Enemy::Enemy(Game* game)
 {
 	SetScale(2.0f);
 	mSpriteComponent = new SpriteComponent(this);
-	mSpriteComponent->SetTexture(mGame->GetTexture("assets/player.png"));
+	mSpriteComponent->SetTexture(mGame->GetTexture("assets/enemy.png"));
 	mCollisionComponent = new CollisionComponent(this);
 	mCollisionComponent->SetSize(16, 16);
 	mEnemyMove = new EnemyMove(this);

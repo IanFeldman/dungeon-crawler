@@ -4,9 +4,11 @@
 #include "collisioncomponent.h"
 #include "AnimatedSprite.h"
 #include "math.h"
+#include "boomerang.h"
 
 Player::Player(Game* game)
 	:Actor(game)
+	,mProjectileSpeed(500.0f)
 {
 	SetScale(2.0f);
 	// animation
@@ -102,4 +104,11 @@ Player::Player(Game* game)
 
 void Player::OnUpdate(float deltaTime)
 {
+}
+
+void Player::Attack(Vector2 direction)
+{
+	class Boomerang* boomerang = new Boomerang(mGame);
+	Vector2 projectileVel = (direction * mProjectileSpeed) + mPlayerMove->GetVelocity();
+	boomerang->Initialize(mPosition, projectileVel);
 }
