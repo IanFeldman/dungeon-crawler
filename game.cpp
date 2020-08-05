@@ -72,7 +72,22 @@ void Game::Runloop() {
 };
 
 void Game::ProcessUpdate() {
-    float zoomSpeed = 0.75f;
+    float zoomSpeed = 2.0f;
+
+    // Converting mouse coordinates from screen to world
+    // Same matrix math as in spritecomponent, but inverted at the end with custom matrix3 invert code in matrix class of math.h
+    int mouseX, mouseY;
+    SDL_GetMouseState(&mouseX, &mouseY);
+    Vector2 mousePos(mouseX, mouseY);
+
+    Matrix3 manipulatorMatrix = Matrix3::Identity;
+    Matrix3 scaleMatrix = Matrix3::CreateScale(mCamera->scale);
+    Matrix3 translateMatrix = Matrix3::CreateTranslation(Vector2(-mCamera->position.x * mCamera->scale + mWindowSize.x / 2, -mCamera->position.y * mCamera->scale + mWindowSize.y / 2));
+    manipulatorMatrix = scaleMatrix * translateMatrix;
+    manipulatorMatrix.Invert();
+    mousePos = Vector2::Transform(mousePos, manipulatorMatrix);
+    
+    Vector2 toMouse = Vector2::Zero;
 
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
@@ -82,12 +97,25 @@ void Game::ProcessUpdate() {
         case SDL_QUIT:
             mRunning = false;
             break;
+        // looking for escape key
+        case SDL_KEYDOWN:
+            switch (event.key.keysym.sym)
+            {
+            case SDLK_ESCAPE:
+                mRunning = false;
+                break;
+            default:
+                break;
+            }
+            break;
         // looking for scroll wheel
         case SDL_MOUSEWHEEL:
             if (event.wheel.y > 0)
-                mCamera->scale /= zoomSpeed;
-            else
                 mCamera->scale *= zoomSpeed;
+            else
+                mCamera->scale /= zoomSpeed;
+
+            // std::cout << mCamera->scale << std::endl;
             
             // clamp camera scale
             /*
@@ -96,7 +124,21 @@ void Game::ProcessUpdate() {
             else if (mCamera->scale > 1.0f)
                 mCamera->scale = 1.0f;
             */
-
+            break;
+        case SDL_MOUSEBUTTONDOWN:
+            switch (event.button.button)
+            {
+            case SDL_BUTTON_LEFT:
+                toMouse = Vector2::Normalize(mousePos - mPlayer->GetPosition());
+                mPlayer->Attack(toMouse);
+                //std::cout << "Mouse Position: " + std::to_string(toMouse.x) + ", " + std::to_string(toMouse.y) << std::endl;
+                //std::cout << "Mouse Position: " + std::to_string(mousePos.x) + ", " + std::to_string(mousePos.y) << std::endl;
+                //std::cout << "Player Position: " + std::to_string(mPlayer->GetPosition().x) + ", " + std::to_string(mPlayer->GetPosition().y) << std::endl;
+                //std::cout << "Distance to Mouse: " + std::to_string(toMouse.x) + ", " + std::to_string(toMouse.y) << std::endl;
+                break;
+            default:
+                break;
+            }
             break;
         default:
             break;
@@ -105,7 +147,7 @@ void Game::ProcessUpdate() {
 
     // processing input for player
     const Uint8* keyboardState = SDL_GetKeyboardState(NULL);
-    mPlayer->GetComponent<PlayerMove>()->ProcessInput(keyboardState);
+    mPlayer->GetComponent<PlayerMove>()->MovementInput(keyboardState);
 }
 
 void Game::UpdateGame() {
@@ -168,12 +210,14 @@ void Game::RemoveActor(Actor* actor) {
 
 void Game::LoadData()
 {
+    // setting up different types of rooms
     InitializeRooms();
+    // loading in csv file for room
     PreloadRooms();
 
     mDungeon = new Dungeon(this);
     mDungeon->GenerateLevel();
-
+    
     mCamera = new Camera;
     mCamera->position = Vector2(320, 320);
     mCamera->scale = 1.0f;
@@ -189,31 +233,67 @@ void Game::LoadData()
 
 void Game::InitializeRooms()
 {
-    class Room* _room = new Room;
-    _room->fileName = (const char*)"assets/rooms/test.csv";
-    _room->size = Vector2(7, 7);
-    mRoomTypes.push_back(_room);
+    // entrances
+    CreateRoom("assets/dungeon/rooms/entrances/n5x5.csv", Vector2(5.0f, 5.0f), OpenSide::None, OpenSide::North, true, false, false);
+    CreateRoom("assets/dungeon/rooms/entrances/e5x5.csv", Vector2(5.0f, 5.0f), OpenSide::None, OpenSide::East, true, false, false);
+    CreateRoom("assets/dungeon/rooms/entrances/s5x5.csv", Vector2(5.0f, 5.0f), OpenSide::None, OpenSide::South, true, false, false);
+    CreateRoom("assets/dungeon/rooms/entrances/w5x5.csv", Vector2(5.0f, 5.0f), OpenSide::None, OpenSide::West, true, false, false);
+    // exits
+    CreateRoom("assets/dungeon/rooms/exits/n5x5.csv", Vector2(5.0f, 5.0f), OpenSide::North, OpenSide::None, false, true, false);
+    CreateRoom("assets/dungeon/rooms/exits/e5x5.csv", Vector2(5.0f, 5.0f), OpenSide::East, OpenSide::None, false, true, false);
+    CreateRoom("assets/dungeon/rooms/exits/s5x5.csv", Vector2(5.0f, 5.0f), OpenSide::South, OpenSide::None, false, true, false);
+    CreateRoom("assets/dungeon/rooms/exits/w5x5.csv", Vector2(5.0f, 5.0f), OpenSide::West, OpenSide::None, false, true, false);
+    // normals
+    CreateRoom("assets/dungeon/rooms/normals/ew5x5.csv", Vector2(5.0f, 5.0f), OpenSide::East, OpenSide::West, false, false, true);
+    CreateRoom("assets/dungeon/rooms/normals/ew5x5.csv", Vector2(5.0f, 5.0f), OpenSide::West, OpenSide::East, false, false, true);
+    CreateRoom("assets/dungeon/rooms/normals/ns5x5.csv", Vector2(5.0f, 5.0f), OpenSide::North, OpenSide::South, false, false, true);
+    CreateRoom("assets/dungeon/rooms/normals/ns5x5.csv", Vector2(5.0f, 5.0f), OpenSide::South, OpenSide::North, false, false, true);
 
-    _room = new Room;
-    _room->fileName = (const char*)"assets/rooms/test1.csv";
-    _room->size = Vector2(11, 5);
-    mRoomTypes.push_back(_room);
+    CreateRoom("assets/dungeon/rooms/normals/ew10x5.csv", Vector2(10.0f, 5.0f), OpenSide::East, OpenSide::West, false, false, true);
+    CreateRoom("assets/dungeon/rooms/normals/ew10x5.csv", Vector2(10.0f, 5.0f), OpenSide::West, OpenSide::East, false, false, true);
 
-    _room = new Room;
-    _room->fileName = (const char*)"assets/rooms/test2.csv";
-    _room->size = Vector2(17, 17);
-    mRoomTypes.push_back(_room);
+    CreateRoom("assets/dungeon/rooms/normals/ns9x9.csv", Vector2(9.0f, 9.0f), OpenSide::North, OpenSide::South, false, false, true);
+    CreateRoom("assets/dungeon/rooms/normals/ns9x9.csv", Vector2(9.0f, 9.0f), OpenSide::South, OpenSide::North, false, false, true);
+    
+    CreateRoom("assets/dungeon/rooms/normals/ne19x19.csv", Vector2(19.0f, 19.0f), OpenSide::North, OpenSide::East, false, false, true);
+    CreateRoom("assets/dungeon/rooms/normals/ne19x19.csv", Vector2(19.0f, 19.0f), OpenSide::East, OpenSide::North, false, false, true);
+    
+    CreateRoom("assets/dungeon/rooms/normals/sw15x7.csv", Vector2(15.0f, 7.0f), OpenSide::South, OpenSide::West, false, false, true);
+    CreateRoom("assets/dungeon/rooms/normals/sw15x7.csv", Vector2(15.0f, 7.0f), OpenSide::West, OpenSide::South, false, false, true);
 
-    _room = new Room;
-    _room->fileName = (const char*)"assets/rooms/test3.csv";
-    _room->size = Vector2(20, 20);
-    mRoomTypes.push_back(_room);
+    // angle normals
+    CreateRoom("assets/dungeon/rooms/normals/nw5x5.csv", Vector2(5.0f, 5.0f), OpenSide::North, OpenSide::West, false, false, true);
+    CreateRoom("assets/dungeon/rooms/normals/nw5x5.csv", Vector2(5.0f, 5.0f), OpenSide::West, OpenSide::North, false, false, true);
+    CreateRoom("assets/dungeon/rooms/normals/ne5x5.csv", Vector2(5.0f, 5.0f), OpenSide::North, OpenSide::East, false, false, true);
+    CreateRoom("assets/dungeon/rooms/normals/ne5x5.csv", Vector2(5.0f, 5.0f), OpenSide::East, OpenSide::North, false, false, true);
+    CreateRoom("assets/dungeon/rooms/normals/se5x5.csv", Vector2(5.0f, 5.0f), OpenSide::South, OpenSide::East, false, false, true);
+    CreateRoom("assets/dungeon/rooms/normals/se5x5.csv", Vector2(5.0f, 5.0f), OpenSide::East, OpenSide::South, false, false, true);
+    CreateRoom("assets/dungeon/rooms/normals/sw5x5.csv", Vector2(5.0f, 5.0f), OpenSide::South, OpenSide::West, false, false, true);
+    CreateRoom("assets/dungeon/rooms/normals/sw5x5.csv", Vector2(5.0f, 5.0f), OpenSide::West, OpenSide::South, false, false, true);
+}
+
+void Game::CreateRoom(const char* fileName, Vector2 size, OpenSide entranceDir, OpenSide exitDir, bool entranceRoom, bool exitRoom, bool normalRoom)
+{
+    struct Room* r = new Room;
+    r->fileName = fileName;
+    r->size = size;
+    r->entranceDir = entranceDir;
+    r->exitDir = exitDir;
+
+    if (entranceRoom)
+        mEntrances.push_back(r);
+    if (exitRoom)
+        mExits.push_back(r);
+    if (normalRoom)
+        mNormals.push_back(r);
+
+    mAllRoomTypes.push_back(r);
 }
 
 void Game::PreloadRooms()
 {
     // load in all csv data
-    for (class Room* r : mRoomTypes)
+    for (class Room* r : mAllRoomTypes)
     {
         std::ifstream inFile;
         inFile.open(r->fileName);

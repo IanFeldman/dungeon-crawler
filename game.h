@@ -7,6 +7,7 @@
 #include "spritecomponent.h"
 #include "player.h"
 #include "enemy.h"
+#include "dungeon.h"
 
 struct Camera {
     Vector2 position;
@@ -30,14 +31,19 @@ public:
     void AddSprite(SpriteComponent* sprite);
     void RemoveSprite(SpriteComponent* sprite);
     class Player* GetPlayer() { return mPlayer; }
+    std::vector<class Enemy*> GetEnemies() { return mEnemies; }
     SDL_Renderer* GetRenderer() { return mRenderer; }
     SDL_Texture* GetTexture(const char* fileName);
     SDL_Point GetWindowSize() { return mWindowSize; }
     Camera* GetCamera() { return mCamera; }
 
     void InitializeRooms();
+    void CreateRoom(const char* fileName, Vector2 size, OpenSide entranceDir, OpenSide exitDir, bool entrance, bool exit, bool normal);
     void PreloadRooms();
-    std::vector<class Room*> GetRoomTypes() { return mRoomTypes; }
+    std::vector<struct Room*> GetRoomTypes() { return mAllRoomTypes; }
+    std::vector<struct Room*> GetEntranceRooms() { return mEntrances; }
+    std::vector<struct Room*> GetExitRooms() { return mExits; }
+    std::vector<struct Room*> GetNormalRooms() { return mNormals; }
 
 private:
     void UnloadData(void);
@@ -56,5 +62,9 @@ protected:
     class Player* mPlayer;
     class Dungeon* mDungeon;
     std::vector<class Enemy*> mEnemies;
-    std::vector<class Room*> mRoomTypes;
+    
+    std::vector<struct Room*> mAllRoomTypes;
+    std::vector<struct Room*> mEntrances;
+    std::vector<struct Room*> mExits;
+    std::vector<struct Room*> mNormals;
 };
