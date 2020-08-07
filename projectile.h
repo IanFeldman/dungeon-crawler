@@ -6,14 +6,20 @@ class Projectile : public Actor
 public:
 	Projectile(class Game* game);
 	void OnUpdate(float deltaTime) override;
-	void Initialize(Vector2 position, Vector2 velocity) { SetPosition(position);  mInitPos = position; mVelocity = velocity; }
-	void Destroy();
+	void Initialize(Vector2 position, Vector2 velocity) { SetPosition(position); mVelocity = velocity; }
+
+private:
+	void SetToDestroy();
 
 protected:
-	class SpriteComponent* mSpriteComponent;
+	class AnimatedSprite* mASprite;
 	class CollisionComponent* mCollisionComponent;
 
-	float mTravelDistance;
-	Vector2 mInitPos;
 	Vector2 mVelocity;
+
+	bool mHit;
+	float mTime;
+	float mLifeLength;
+	float mHitTime;
+	float mHitAnimLength;
 };

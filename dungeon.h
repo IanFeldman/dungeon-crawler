@@ -34,6 +34,7 @@ class Dungeon {
 public:
     Dungeon(class Game* game);
     void GenerateLevel();
+    Vector2 GetStartPosition();
 
 private:
     // Dungeon generation
@@ -54,7 +55,7 @@ private:
 protected:
     class Game* mGame;
     int mRoomCount;
-    int mTileSize;
+    Vector2 mTileSize;
 
     std::vector<class Room*> mRooms;
     std::vector<class Tile*> mTiles;

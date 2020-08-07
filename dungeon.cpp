@@ -8,8 +8,8 @@
 
 Dungeon::Dungeon(Game* game)
 	:mGame(game)
-	,mRoomCount(200)
-	,mTileSize(64)
+	,mRoomCount(50)
+	,mTileSize(64.0f, 64.0f)
 {
 }
 
@@ -215,8 +215,8 @@ void Dungeon::DrawRooms()
 			{
 				class Tile* _tile = new Tile(mGame);
 				Vector2 _pos;
-				_pos.x = r->position.x + (i * mTileSize);
-				_pos.y = r->position.y + (j * mTileSize);
+				_pos.x = r->position.x + (i * mTileSize.x);
+				_pos.y = r->position.y + (j * mTileSize.y);
 				_tile->SetPosition(_pos);
 				mTiles.push_back(_tile);
 
@@ -225,6 +225,8 @@ void Dungeon::DrawRooms()
 				{
 				case 'w':
 					_tile->GetComponent<SpriteComponent>()->SetTexture(mGame->GetTexture("assets/dungeon/wall.png"));
+					_tile->SetCollisionComponent(mTileSize * 0.5f);
+					mGame->AddCollidable(_tile);
 					break;
 				case '.':
 					_tile->GetComponent<SpriteComponent>()->SetTexture(mGame->GetTexture("assets/dungeon/floor.png"));
@@ -285,23 +287,23 @@ Vector2 Dungeon::SetRoomPosition(struct Room* currRoom, struct Room* prevRoom)
 	{
 		// put room below previous
 	case OpenSide::North:
-		exitPos = prevRoom->position + Vector2(floor(prevRoom->size.x * 0.5f) * mTileSize, prevRoom->size.y * mTileSize);
-		pos = exitPos + Vector2(-floor(currRoom->size.x * 0.5f) * mTileSize, 0.0f);
+		exitPos = prevRoom->position + Vector2(floor(prevRoom->size.x * 0.5f) * mTileSize.x, prevRoom->size.y * mTileSize.y);
+		pos = exitPos + Vector2(-floor(currRoom->size.x * 0.5f) * mTileSize.x, 0.0f);
 		break;
 		// put room above previous
 	case OpenSide::South:
-		exitPos = prevRoom->position + Vector2(floor(prevRoom->size.x * 0.5f) * mTileSize, 0.0f);
-		pos = exitPos + Vector2(-floor(currRoom->size.x * 0.5f) * mTileSize, -currRoom->size.y * mTileSize);
+		exitPos = prevRoom->position + Vector2(floor(prevRoom->size.x * 0.5f) * mTileSize.x, 0.0f);
+		pos = exitPos + Vector2(-floor(currRoom->size.x * 0.5f) * mTileSize.x, -currRoom->size.y * mTileSize.y);
 		break;
 		// put room to left of previous
 	case OpenSide::East:
-		exitPos = prevRoom->position + Vector2(0.0f, floor(prevRoom->size.y * 0.5f) * mTileSize);
-		pos = exitPos + Vector2(-currRoom->size.x * mTileSize, -floor(currRoom->size.y * 0.5f) * mTileSize);
+		exitPos = prevRoom->position + Vector2(0.0f, floor(prevRoom->size.y * 0.5f) * mTileSize.y);
+		pos = exitPos + Vector2(-currRoom->size.x * mTileSize.x, -floor(currRoom->size.y * 0.5f) * mTileSize.y);
 		break;
 		// put room to right of previous
 	case OpenSide::West:
-		exitPos = prevRoom->position + Vector2(prevRoom->size.x * mTileSize, floor(prevRoom->size.y * 0.5f) * mTileSize);
-		pos = exitPos + Vector2(0.0f, -floor(currRoom->size.y * 0.5f) * mTileSize);
+		exitPos = prevRoom->position + Vector2(prevRoom->size.x * mTileSize.x, floor(prevRoom->size.y * 0.5f) * mTileSize.y);
+		pos = exitPos + Vector2(0.0f, -floor(currRoom->size.y * 0.5f) * mTileSize.y);
 		break;
 	default:
 		std::cerr << "Error: Current room has no entrance" << std::endl;
@@ -361,7 +363,16 @@ Vector2 Dungeon::GetMin(Room* room)
 Vector2 Dungeon::GetMax(Room* room)
 {
 	Vector2 max;
-	max.x = room->position.x + (room->size.x * mTileSize);
-	max.y = room->position.y + (room->size.y * mTileSize);
+	max.x = room->position.x + (room->size.x * mTileSize.x);
+	max.y = room->position.y + (room->size.y * mTileSize.y);
 	return max;
+}
+
+Vector2 Dungeon::GetStartPosition()
+{
+	Vector2 start;
+	start = mRooms.front()->position;
+	start.x += floor(mRooms.front()->size.x * 0.5f) * mTileSize.x;
+	start.y += floor(mRooms.front()->size.y * 0.5f) * mTileSize.y;
+	return start;
 }

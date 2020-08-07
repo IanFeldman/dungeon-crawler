@@ -179,7 +179,20 @@ void Game::UpdateGame() {
     }
 
     // update camera pos
-    mCamera->position = Vector2::Lerp(mCamera->position, mPlayer->GetPosition(), 0.1f);
+    Vector2 pos = mPlayer->GetPosition();
+    if (mCameraShake) {
+        float xOffset = (rand() % mShakeMag) - ((float)mShakeMag * 0.5f);
+        float yOffset = (rand() % mShakeMag) - ((float)mShakeMag * 0.5f);
+        pos.x += xOffset;
+        pos.y += yOffset;
+        mShakes++;
+    }
+    mCamera->position = Vector2::Lerp(mCamera->position, pos, 0.1f);
+    if (mShakes >= mShakeLength)
+    {
+        mCameraShake = false;
+        mShakes = 0;
+    }
 }
 
 void Game::GenerateOutput() {
@@ -222,9 +235,8 @@ void Game::LoadData()
     mCamera->position = Vector2(320, 320);
     mCamera->scale = 1.0f;
 
-    Vector2 pos = Vector2(16, 16);
     mPlayer = new Player(this);
-    mPlayer->SetPosition(pos);
+    mPlayer->SetPosition(mDungeon->GetStartPosition());
 
     class Enemy* _enemy = new Enemy(this);
     _enemy->SetPosition(Vector2(112, 112));

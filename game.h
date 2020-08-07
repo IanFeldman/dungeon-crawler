@@ -32,10 +32,13 @@ public:
     void RemoveSprite(SpriteComponent* sprite);
     class Player* GetPlayer() { return mPlayer; }
     std::vector<class Enemy*> GetEnemies() { return mEnemies; }
+    std::vector<class Actor*> GetCollidables() { return mCollidables; }
+    void AddCollidable(class Actor* collidable) { mCollidables.push_back(collidable); }
     SDL_Renderer* GetRenderer() { return mRenderer; }
     SDL_Texture* GetTexture(const char* fileName);
     SDL_Point GetWindowSize() { return mWindowSize; }
     Camera* GetCamera() { return mCamera; }
+    void CameraShake(int magnitude, int length) { mCameraShake = true; mShakeMag = magnitude; mShakeLength = length; }
 
     void InitializeRooms();
     void CreateRoom(const char* fileName, Vector2 size, OpenSide entranceDir, OpenSide exitDir, bool entrance, bool exit, bool normal);
@@ -67,4 +70,11 @@ protected:
     std::vector<struct Room*> mEntrances;
     std::vector<struct Room*> mExits;
     std::vector<struct Room*> mNormals;
+    
+    std::vector<class Actor*> mCollidables;
+
+    bool mCameraShake = false;
+    int mShakeMag = 100;
+    int mShakeLength = 20;
+    int mShakes;
 };
