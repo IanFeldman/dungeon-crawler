@@ -26,7 +26,8 @@ void SpriteComponent::Draw(SDL_Renderer* renderer)
 	Matrix3 manipulatorMatrix = Matrix3::Identity;
 	Matrix3 scaleMatrix = Matrix3::CreateScale(cam->scale);
 	// i dont know why the camera pos has to be inverted, but it works this way
-	Matrix3 translateMatrix = Matrix3::CreateTranslation(Vector2(-cam->position.x * cam->scale + windowSize.x / 2, -cam->position.y * cam->scale + windowSize.y / 2));
+	Vector2 camPos = Vector2::Transform(cam->position, scaleMatrix);
+	Matrix3 translateMatrix = Matrix3::CreateTranslation(Vector2(-camPos.x + windowSize.x / 2, -camPos.y + windowSize.y / 2));
 	manipulatorMatrix = scaleMatrix * translateMatrix;
 	Vector2 screenPos = Vector2::Transform(ownerPos, manipulatorMatrix);
 

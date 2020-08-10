@@ -8,11 +8,12 @@
 
 Player::Player(Game* game)
 	:Actor(game)
-	,mProjectileSpeed(500.0f)
+	,mBoomerangSpeed(250.0f)
+	,mTotalBoomerangCount(3)
+	,mBoomerangCount(0)
 {
-	SetScale(2.0f);
 	// animation
-	mASprite = new AnimatedSprite(this, 200);
+	mASprite = new AnimatedSprite(this, 150);
 	// idle
 	std::vector<SDL_Texture*> idleAnim{
 		mGame->GetTexture("assets/player/idle/idle1.png"),
@@ -99,7 +100,7 @@ Player::Player(Game* game)
 	// player move must come after anim init
 	mPlayerMove = new PlayerMove(this);
 	mCollisionComponent = new CollisionComponent(this);
-	mCollisionComponent->SetSize(16, 16);
+	mCollisionComponent->SetSize(32, 32);
 }
 
 void Player::OnUpdate(float deltaTime)
@@ -108,7 +109,11 @@ void Player::OnUpdate(float deltaTime)
 
 void Player::Attack(Vector2 direction)
 {
+	if (mBoomerangCount == mTotalBoomerangCount)
+		return;
+
+	mBoomerangCount++;
 	class Boomerang* boomerang = new Boomerang(mGame);
-	Vector2 projectileVel = (direction * mProjectileSpeed) + mPlayerMove->GetVelocity();
+	Vector2 projectileVel = (direction * mBoomerangSpeed) + mPlayerMove->GetVelocity();
 	boomerang->Initialize(mPosition, projectileVel);
 }

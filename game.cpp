@@ -10,18 +10,21 @@
 #include <cstring>
 #include <random>
 #include <ctime>
-#include "Game.h"
-#include "Actor.h"
-#include "Math.h"
-#include "Player.h"
-#include "PlayerMove.h"
+#include "game.h"
+#include "actor.h"
+#include "math.h"
+#include "player.h"
+#include "playermove.h"
 #include "enemy.h"
 #include "enemymove.h"
 #include "dungeon.h"
+#include "room.h"
+#include "wall.h"
+#include "spritecomponent.h"
 
 Game::Game()
     :mRunning(true)
-    ,mWindowSize({1500, 750})
+    ,mWindowSize({1600, 900})
 {
     mWindowSizeVector.Set(mWindowSize.x, mWindowSize.y);
 }
@@ -72,7 +75,7 @@ void Game::Runloop() {
 };
 
 void Game::ProcessUpdate() {
-    float zoomSpeed = 2.0f;
+    float zoomSpeed = 0.75f;
 
     // Converting mouse coordinates from screen to world
     // Same matrix math as in spritecomponent, but inverted at the end with custom matrix3 invert code in matrix class of math.h
@@ -111,9 +114,9 @@ void Game::ProcessUpdate() {
         // looking for scroll wheel
         case SDL_MOUSEWHEEL:
             if (event.wheel.y > 0)
-                mCamera->scale *= zoomSpeed;
-            else
                 mCamera->scale /= zoomSpeed;
+            else
+                mCamera->scale *= zoomSpeed;
 
             // std::cout << mCamera->scale << std::endl;
             
@@ -224,7 +227,7 @@ void Game::RemoveActor(Actor* actor) {
 void Game::LoadData()
 {
     // setting up different types of rooms
-    InitializeRooms();
+    CreateRooms();
     // loading in csv file for room
     PreloadRooms();
 
@@ -232,107 +235,75 @@ void Game::LoadData()
     mDungeon->GenerateLevel();
     
     mCamera = new Camera;
-    mCamera->position = Vector2(320, 320);
+    mCamera->position = Vector2::Zero;
     mCamera->scale = 1.0f;
 
     mPlayer = new Player(this);
-    mPlayer->SetPosition(mDungeon->GetStartPosition());
+    //Vector2 playerPos = Vector2(mWallSize.x, mWallSize.y);
+    mPlayer->SetPosition(Vector2::Zero);
 
-    class Enemy* _enemy = new Enemy(this);
-    _enemy->SetPosition(Vector2(112, 112));
-    mEnemies.push_back(_enemy);
+    //class Enemy* enemy = new Enemy(this);
+    //enemy->Initialize(Vector2(-10.0f, -10.0f), EnemyType::Normal);
+    //mEnemies.push_back(enemy);
+
+    // Removes the rooms initialized here as the different room types
+    // also removes the walls that were generated with them
+    RemoveExampleRooms();
 }
 
-void Game::InitializeRooms()
+
+void Game::CreateRooms()
 {
-    // entrances
-    CreateRoom("assets/dungeon/rooms/entrances/n5x5.csv", Vector2(5.0f, 5.0f), OpenSide::None, OpenSide::North, true, false, false);
-    CreateRoom("assets/dungeon/rooms/entrances/e5x5.csv", Vector2(5.0f, 5.0f), OpenSide::None, OpenSide::East, true, false, false);
-    CreateRoom("assets/dungeon/rooms/entrances/s5x5.csv", Vector2(5.0f, 5.0f), OpenSide::None, OpenSide::South, true, false, false);
-    CreateRoom("assets/dungeon/rooms/entrances/w5x5.csv", Vector2(5.0f, 5.0f), OpenSide::None, OpenSide::West, true, false, false);
-    // exits
-    CreateRoom("assets/dungeon/rooms/exits/n5x5.csv", Vector2(5.0f, 5.0f), OpenSide::North, OpenSide::None, false, true, false);
-    CreateRoom("assets/dungeon/rooms/exits/e5x5.csv", Vector2(5.0f, 5.0f), OpenSide::East, OpenSide::None, false, true, false);
-    CreateRoom("assets/dungeon/rooms/exits/s5x5.csv", Vector2(5.0f, 5.0f), OpenSide::South, OpenSide::None, false, true, false);
-    CreateRoom("assets/dungeon/rooms/exits/w5x5.csv", Vector2(5.0f, 5.0f), OpenSide::West, OpenSide::None, false, true, false);
-    // normals
-    CreateRoom("assets/dungeon/rooms/normals/ew5x5.csv", Vector2(5.0f, 5.0f), OpenSide::East, OpenSide::West, false, false, true);
-    CreateRoom("assets/dungeon/rooms/normals/ew5x5.csv", Vector2(5.0f, 5.0f), OpenSide::West, OpenSide::East, false, false, true);
-    CreateRoom("assets/dungeon/rooms/normals/ns5x5.csv", Vector2(5.0f, 5.0f), OpenSide::North, OpenSide::South, false, false, true);
-    CreateRoom("assets/dungeon/rooms/normals/ns5x5.csv", Vector2(5.0f, 5.0f), OpenSide::South, OpenSide::North, false, false, true);
+    Room* r1 = new Room(this, Vector2(3, 3), (const char*)"assets/dungeon/rooms/3x3test.csv");
+    mAllRoomTypes.push_back(r1);
 
-    CreateRoom("assets/dungeon/rooms/normals/ew10x5.csv", Vector2(10.0f, 5.0f), OpenSide::East, OpenSide::West, false, false, true);
-    CreateRoom("assets/dungeon/rooms/normals/ew10x5.csv", Vector2(10.0f, 5.0f), OpenSide::West, OpenSide::East, false, false, true);
+    Room* r2 = new Room(this, Vector2(3, 6), (const char*)"assets/dungeon/rooms/3x6test.csv");
+    mAllRoomTypes.push_back(r2);
 
-    CreateRoom("assets/dungeon/rooms/normals/ns9x9.csv", Vector2(9.0f, 9.0f), OpenSide::North, OpenSide::South, false, false, true);
-    CreateRoom("assets/dungeon/rooms/normals/ns9x9.csv", Vector2(9.0f, 9.0f), OpenSide::South, OpenSide::North, false, false, true);
-    
-    CreateRoom("assets/dungeon/rooms/normals/ne19x19.csv", Vector2(19.0f, 19.0f), OpenSide::North, OpenSide::East, false, false, true);
-    CreateRoom("assets/dungeon/rooms/normals/ne19x19.csv", Vector2(19.0f, 19.0f), OpenSide::East, OpenSide::North, false, false, true);
-    
-    CreateRoom("assets/dungeon/rooms/normals/sw15x7.csv", Vector2(15.0f, 7.0f), OpenSide::South, OpenSide::West, false, false, true);
-    CreateRoom("assets/dungeon/rooms/normals/sw15x7.csv", Vector2(15.0f, 7.0f), OpenSide::West, OpenSide::South, false, false, true);
+    Room* r3 = new Room(this, Vector2(6, 15), (const char*)"assets/dungeon/rooms/6x15test.csv");
+    mAllRoomTypes.push_back(r3);
 
-    // angle normals
-    CreateRoom("assets/dungeon/rooms/normals/nw5x5.csv", Vector2(5.0f, 5.0f), OpenSide::North, OpenSide::West, false, false, true);
-    CreateRoom("assets/dungeon/rooms/normals/nw5x5.csv", Vector2(5.0f, 5.0f), OpenSide::West, OpenSide::North, false, false, true);
-    CreateRoom("assets/dungeon/rooms/normals/ne5x5.csv", Vector2(5.0f, 5.0f), OpenSide::North, OpenSide::East, false, false, true);
-    CreateRoom("assets/dungeon/rooms/normals/ne5x5.csv", Vector2(5.0f, 5.0f), OpenSide::East, OpenSide::North, false, false, true);
-    CreateRoom("assets/dungeon/rooms/normals/se5x5.csv", Vector2(5.0f, 5.0f), OpenSide::South, OpenSide::East, false, false, true);
-    CreateRoom("assets/dungeon/rooms/normals/se5x5.csv", Vector2(5.0f, 5.0f), OpenSide::East, OpenSide::South, false, false, true);
-    CreateRoom("assets/dungeon/rooms/normals/sw5x5.csv", Vector2(5.0f, 5.0f), OpenSide::South, OpenSide::West, false, false, true);
-    CreateRoom("assets/dungeon/rooms/normals/sw5x5.csv", Vector2(5.0f, 5.0f), OpenSide::West, OpenSide::South, false, false, true);
-}
+    Room* r4 = new Room(this, Vector2(9, 15), (const char*)"assets/dungeon/rooms/9x15test.csv");
+    mAllRoomTypes.push_back(r4);
 
-void Game::CreateRoom(const char* fileName, Vector2 size, OpenSide entranceDir, OpenSide exitDir, bool entranceRoom, bool exitRoom, bool normalRoom)
-{
-    struct Room* r = new Room;
-    r->fileName = fileName;
-    r->size = size;
-    r->entranceDir = entranceDir;
-    r->exitDir = exitDir;
+    Room* r5 = new Room(this, Vector2(12, 6), (const char*)"assets/dungeon/rooms/12x6test.csv");
+    mAllRoomTypes.push_back(r5);
 
-    if (entranceRoom)
-        mEntrances.push_back(r);
-    if (exitRoom)
-        mExits.push_back(r);
-    if (normalRoom)
-        mNormals.push_back(r);
+    Room* r6 = new Room(this, Vector2(21, 21), (const char*)"assets/dungeon/rooms/21x21test.csv");
+    mAllRoomTypes.push_back(r6);
 
-    mAllRoomTypes.push_back(r);
 }
 
 void Game::PreloadRooms()
 {
     // load in all csv data
-    for (class Room* r : mAllRoomTypes)
+    for (Room* r : mAllRoomTypes)
     {
         std::ifstream inFile;
-        inFile.open(r->fileName);
+        inFile.open(r->GetFileName());
         if (!inFile) {
             std::cerr << "Unable to open file datafile.csv";
             mRunning = false;
         }
         std::string temp;
-        for (int j = 0; j < r->size.y; j++)
+        for (int j = 0; j < r->GetSize().y; j++)
         {
-            std::vector<char> _row;
-
-            for (int i = 0; i < r->size.x; i++)
+            for (int i = 0; i < r->GetSize().x; i++)
             {
-                if (i == r->size.x - 1)
+                if (i == r->GetSize().x - 1)
                     std::getline(inFile, temp);
                 else
                     std::getline(inFile, temp, ',');
 
                 char tempChar = temp[0];
-                if (tempChar == NULL)
-                    _row.push_back((char)'.');
-                else
-                    _row.push_back(tempChar);
+                if (tempChar == 'w')
+                {
+                    // set the relative wall position as world coordinates
+                    Vector2 wallPos = Vector2((i * mCsvSize.x) - (r->GetSize().x * 0.5f * mCsvSize.x) + (mCsvSize.x * 0.5f), (j * mCsvSize.y) - (r->GetSize().y * 0.5f * mCsvSize.y) + (mCsvSize.x * 0.5f));
+                    Wall* wall = new Wall(this, wallPos, r);
+                    r->AddWall(wall);
+                }
             }
-
-            r->characters.push_back(_row);
         }
     }
 }
@@ -378,4 +349,17 @@ void Game::RemoveSprite(SpriteComponent* sprite) {
     if (it != mSprites.end()) {
         mSprites.erase(it);
     }
+}
+
+void Game::RemoveExampleRooms()
+{
+    for (Room* r : mAllRoomTypes)
+    {
+        for (Wall* w : r->GetWalls())
+        {
+            w->SetState(ActorState::Destroy);
+        }
+        r->SetState(ActorState::Destroy);
+    }
+    mAllRoomTypes.clear();
 }

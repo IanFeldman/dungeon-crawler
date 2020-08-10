@@ -17,7 +17,7 @@ class PlayerMove : public MoveComponent
 public:
     PlayerMove(class Actor* owner);
     void Update(float deltaTime) override;
-    void ProcessInput(const Uint8* keyboardState);
+    void MovementInput(const Uint8* keyboardState);
 
     void SetDirection(MoveDirection dir) { mDir = dir; }
 

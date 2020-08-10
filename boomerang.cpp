@@ -3,29 +3,58 @@
 #include "math.h"
 #include "collisioncomponent.h"
 #include "AnimatedSprite.h"
+#include "enemy.h"
+#include "player.h"
 
 Boomerang::Boomerang(Game* game)
 	:Actor(game)
 	,mVelocity(Vector2::Zero)
 	,mReturnSpeed(5.0f)
-	,mWaitTime(0.0f)
+	,mTime(0.0f)
+	,mBroken(false)
+	,mImpactTime(0.0f)
 {
-	SetScale(1.0f);
-	mASprite = new AnimatedSprite(this, 150);
+	mASprite = new AnimatedSprite(this, 200);
 	std::vector<SDL_Texture*> spinAnim{
-		mGame->GetTexture("assets/boomerang/boomerang1.png"),
-		mGame->GetTexture("assets/boomerang/boomerang2.png"),
-		mGame->GetTexture("assets/boomerang/boomerang3.png"),
-		mGame->GetTexture("assets/boomerang/boomerang4.png"),
-		mGame->GetTexture("assets/boomerang/boomerang5.png"),
-		mGame->GetTexture("assets/boomerang/boomerang6.png"),
-		mGame->GetTexture("assets/boomerang/boomerang7.png"),
-		mGame->GetTexture("assets/boomerang/boomerang8.png"),
+		mGame->GetTexture("assets/boomerang/spin/boomerang-spin1.png"),
+		mGame->GetTexture("assets/boomerang/spin/boomerang-spin2.png"),
+		mGame->GetTexture("assets/boomerang/spin/boomerang-spin3.png"),
+		mGame->GetTexture("assets/boomerang/spin/boomerang-spin4.png"),
+		mGame->GetTexture("assets/boomerang/spin/boomerang-spin5.png"),
+		mGame->GetTexture("assets/boomerang/spin/boomerang-spin6.png"),
+		mGame->GetTexture("assets/boomerang/spin/boomerang-spin7.png"),
+		mGame->GetTexture("assets/boomerang/spin/boomerang-spin8.png")
+	};
+	std::vector<SDL_Texture*> breakAnim{
+		mGame->GetTexture("assets/boomerang/break/boomerang-break1.png"),
+		mGame->GetTexture("assets/boomerang/break/boomerang-break2.png"),
+		mGame->GetTexture("assets/boomerang/break/boomerang-break3.png"),
+		mGame->GetTexture("assets/boomerang/break/boomerang-break4.png"),
+		mGame->GetTexture("assets/boomerang/break/boomerang-break5.png"),
+		mGame->GetTexture("assets/boomerang/break/boomerang-break6.png"),
+		mGame->GetTexture("assets/boomerang/break/boomerang-break7.png"),
+		mGame->GetTexture("assets/boomerang/break/boomerang-break8.png"),
+		mGame->GetTexture("assets/boomerang/break/boomerang-break9.png"),
+		mGame->GetTexture("assets/boomerang/break/boomerang-break10.png"),
+		mGame->GetTexture("assets/boomerang/break/boomerang-break11.png"),
+		mGame->GetTexture("assets/boomerang/break/boomerang-break12.png"),
+		mGame->GetTexture("assets/boomerang/break/boomerang-break12.png"),
+		mGame->GetTexture("assets/boomerang/break/boomerang-break12.png"),
+		mGame->GetTexture("assets/boomerang/break/boomerang-break12.png"),
+		mGame->GetTexture("assets/boomerang/break/boomerang-break12.png"),
+		mGame->GetTexture("assets/boomerang/break/boomerang-break12.png"),
+		mGame->GetTexture("assets/boomerang/break/boomerang-break12.png"),
+		mGame->GetTexture("assets/boomerang/break/boomerang-break12.png"),
+		mGame->GetTexture("assets/boomerang/break/boomerang-break12.png")
 	};
 	mASprite->AddAnimation("spin", spinAnim);
+	mASprite->AddAnimation("break", breakAnim);
 	mASprite->SetAnimation("spin");
 
 	mCollisionComponent = new CollisionComponent(this);
+	mCollisionComponent->SetSize(16, 16);
+
+	mPlayer = mGame->GetPlayer();
 }
 
 void Boomerang::OnUpdate(float deltaTime)
@@ -33,15 +62,34 @@ void Boomerang::OnUpdate(float deltaTime)
 	// update position
 	mPosition += mVelocity * deltaTime;
 
-	if (mWaitTime < 0.2f)
+	for (class Enemy* e : mGame->GetEnemies())
 	{
-		mWaitTime += deltaTime;
+		class CollisionComponent* otherCC = e->GetComponent<CollisionComponent>();
+		if (mCollisionComponent->Intersect(otherCC))
+		{
+			// kill enemy
+			// break boomerang
+			SetToDestroy();
+		}
+	}
+
+	mTime += deltaTime;
+	if (mTime < 0.2f)
 		return;
+
+	if (mBroken)
+	{
+		// wait until the break animation is over
+		if (mTime >= mImpactTime + 0.15f)
+		{
+			SetState(ActorState::Destroy);
+			mPlayer->LowerBoomerangCount();
+			return;
+		}
 	}
 
 	// update velocity
-	Vector2 playerPos = mGame->GetPlayer()->GetPosition();
-	Vector2 toPlayer = playerPos - mPosition;
+	Vector2 toPlayer = mPlayer->GetPosition() - mPosition;
 	Vector2 dirToPlayer = Vector2::Normalize(toPlayer);
 
 	Vector2 suppressor = -1.0f * mVelocity;
@@ -59,11 +107,12 @@ void Boomerang::OnUpdate(float deltaTime)
 
 	// destroy
 	if (toPlayer.Length() < 16.0f)
-		Destroy();
+		SetToDestroy();
 }
 
-void Boomerang::Destroy()
+void Boomerang::SetToDestroy()
 {
-	// hit animation
-	SetState(ActorState::Destroy);
+	mBroken = true;
+	mImpactTime = mTime;
+	mASprite->SetAnimation("break");
 }

@@ -4,10 +4,6 @@
 #include <unordered_map>
 #include <string>
 #include "math.h"
-#include "spritecomponent.h"
-#include "player.h"
-#include "enemy.h"
-#include "dungeon.h"
 
 struct Camera {
     Vector2 position;
@@ -28,9 +24,10 @@ public:
     void AddActor(class Actor* actor);
     void RemoveActor(class Actor* actor);
     std::vector<class Actor*> GetActors() { return mActors; }
-    void AddSprite(SpriteComponent* sprite);
-    void RemoveSprite(SpriteComponent* sprite);
+    void AddSprite(class SpriteComponent* sprite);
+    void RemoveSprite(class SpriteComponent* sprite);
     class Player* GetPlayer() { return mPlayer; }
+    Vector2 GetCsvSize() { return mCsvSize; }
     std::vector<class Enemy*> GetEnemies() { return mEnemies; }
     std::vector<class Actor*> GetCollidables() { return mCollidables; }
     void AddCollidable(class Actor* collidable) { mCollidables.push_back(collidable); }
@@ -39,14 +36,12 @@ public:
     SDL_Point GetWindowSize() { return mWindowSize; }
     Camera* GetCamera() { return mCamera; }
     void CameraShake(int magnitude, int length) { mCameraShake = true; mShakeMag = magnitude; mShakeLength = length; }
-
-    void InitializeRooms();
-    void CreateRoom(const char* fileName, Vector2 size, OpenSide entranceDir, OpenSide exitDir, bool entrance, bool exit, bool normal);
+;
+    void CreateRooms();
     void PreloadRooms();
     std::vector<struct Room*> GetRoomTypes() { return mAllRoomTypes; }
-    std::vector<struct Room*> GetEntranceRooms() { return mEntrances; }
-    std::vector<struct Room*> GetExitRooms() { return mExits; }
-    std::vector<struct Room*> GetNormalRooms() { return mNormals; }
+
+    void RemoveExampleRooms();
 
 private:
     void UnloadData(void);
@@ -61,16 +56,13 @@ protected:
     SDL_Renderer* mRenderer;
     std::vector<class Actor*> mActors;
     std::unordered_map<std::string, SDL_Texture*> mTextureCache;
-    std::vector<SpriteComponent*> mSprites;
+    std::vector<class SpriteComponent*> mSprites;
     class Player* mPlayer;
     class Dungeon* mDungeon;
+    Vector2 mCsvSize = Vector2(32.0f, 32.0f);
     std::vector<class Enemy*> mEnemies;
-    
-    std::vector<struct Room*> mAllRoomTypes;
-    std::vector<struct Room*> mEntrances;
-    std::vector<struct Room*> mExits;
-    std::vector<struct Room*> mNormals;
-    
+ 
+    std::vector<class Room*> mAllRoomTypes;
     std::vector<class Actor*> mCollidables;
 
     bool mCameraShake = false;

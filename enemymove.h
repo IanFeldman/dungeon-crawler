@@ -8,7 +8,11 @@ class EnemyMove : public MoveComponent
 public:
 	EnemyMove(class Actor* owner);
 	void Update(float deltaTime) override;
-	void Move();
+	void Move(float deltaTime);
 
 private:
+	float mSpeed;
+	float mTime;
+	float mMoveTime;
+	float mShootTime;
 };

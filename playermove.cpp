@@ -10,7 +10,7 @@
 PlayerMove::PlayerMove(Actor* owner)
     :MoveComponent(owner)
     ,mDir(MoveDirection::Idle)
-    ,mSpeed(500.0f)
+    ,mSpeed(300.0f)
 {
     mASprite = mOwner->GetComponent<AnimatedSprite>();
 }
@@ -20,6 +20,18 @@ void PlayerMove::Update(float deltaTime)
     mOwner->SetRotation((deltaTime * GetAngularSpeed()) + mOwner->GetRotation());
     SetVelocity(deltaTime * GetAccel() + GetVelocity());
     mOwner->SetPosition((deltaTime * GetVelocity()) + mOwner->GetPosition());
+
+    CollisionComponent* thisCC = mOwner->GetComponent<CollisionComponent>();
+    for (Actor* actor : mOwner->GetGame()->GetCollidables()) {
+        if (actor != mOwner && actor->GetState() == ActorState::Active) {
+            CollSide collside;
+            Vector2 offset = Vector2::Zero;
+            CollisionComponent* otherCC = actor->GetComponent<CollisionComponent>();
+            if (thisCC->GetMinOverlap(otherCC, offset) != CollSide::None) {
+                mOwner->SetPosition(mOwner->GetPosition() + offset);
+            }
+        }
+    }
 
     // set animation
     switch (mDir)
@@ -44,7 +56,7 @@ void PlayerMove::Update(float deltaTime)
     }
 }
 
-void PlayerMove::ProcessInput(const Uint8* keyboardState)
+void PlayerMove::MovementInput(const Uint8* keyboardState)
 {
     Vector2 direction = Vector2::Zero;
 

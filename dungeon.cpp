@@ -1,6 +1,11 @@
 #include "dungeon.h"
 #include "game.h"
-#include "tile.h"
+#include "node.h"
+#include "room.h"
+#include "wall.h"
+#include "collisioncomponent.h"
+#include "spritecomponent.h" // unneeded
+#include "player.h" // unneeded
 #include <vector>
 #include <set>
 #include <iostream>
@@ -8,198 +13,206 @@
 
 Dungeon::Dungeon(Game* game)
 	:mGame(game)
-	,mRoomCount(50)
-	,mTileSize(64.0f, 64.0f)
+	,mRoomCount(100)
+	,mDungeonSize(300, 300)
+	,mCsvSize(mGame->GetCsvSize())
 {
+	mDungeonSize.x *= mCsvSize.x;
+	mDungeonSize.y *= mCsvSize.y;
 }
 
 void Dungeon::GenerateLevel()
 {
+	// Initialize node grid
+	PlaceNodes();
+	// Pick which room types to use
+	PickRooms();
+	//Place rooms
 	PlaceRooms();
-	DrawRooms();
+	//ConnectRooms();
+	//Pathfind();
+}
+
+void Dungeon::PlaceNodes()
+{
+	std::cout << "Placing Nodes..." << std::endl;
+
+	// offset start by a little bit, and go up by three wall tiles
+	for (int j = int(mCsvSize.y * 1.5f); j < mDungeonSize.y; j += int(3.0f * mCsvSize.y))
+	{
+		std::vector<Node*> row;
+
+		for (float i = int(mCsvSize.x * 1.5f); i < mDungeonSize.x; i += int(3.0f * mCsvSize.x))
+		{
+			Node* node = new Node(mGame);
+			node->SetPosition(Vector2(i, j));
+			row.push_back(node);
+		}
+
+		mNodeGrid.push_back(row);
+	}
+
+	std::cout << "Done!" << std::endl;
+}
+
+void Dungeon::PickRooms()
+{
+	std::cout << "Picking Rooms..." << std::endl;
+
+	std::vector<Room*> mRoomTypes = mGame->GetRoomTypes();
+
+	// entrance
+	// exit
+	// boss
+	// shop
+	// normal
+
+	for (int i = 0; i < mRoomCount; i++)
+	{
+		int random = rand() % mRoomTypes.size();
+		mRooms.push_back(Clone(mRoomTypes[random]));
+	}
+
+	std::cout << "Done!" << std::endl;
+}
+
+Room* Dungeon::Clone(Room* room)
+{
+	Room* newRoom = new Room(mGame, room->GetSize(), nullptr);
+
+	// clone walls also
+	for (Wall* w : room->GetWalls())
+	{
+		Wall* newWall = new Wall(mGame, w->GetRelativePos(), room);
+		newRoom->AddWall(newWall);
+	}
+
+	return newRoom;
 }
 
 void Dungeon::PlaceRooms()
 {
 	std::cout << "Placing Rooms..." << std::endl;
 
-	// pick random entrance
-	struct Room* entrance;
-	int _rand = rand() % mGame->GetEntranceRooms().size();
-	entrance = Clone(mGame->GetEntranceRooms()[_rand]);
-	entrance->position = Vector2::Zero;
-	mRooms.push_back(entrance);
+	std::vector<Room*> positionedRooms;
 
-	int intersectingRooms = 0;
-	// normal rooms
-	for (int i = 0; i < mRoomCount - 2; i++) // minus two for entrance and exit
+	bool dungeonFull = false;
+	// for each room
+	for (Room* r : mRooms)
 	{
-		// figure out entrance direction of next room based off exit direction of previous
-		OpenSide nextEntranceDir = GetEntranceDir(mRooms.back()->exitDir);
-		int x = 0;
-
-		// create list of potential rooms with that entrance
-		std::vector<struct Room*> potentialNextRooms;
-		for (struct Room* r : mGame->GetNormalRooms())
+		// delete the extra rooms
+		if (dungeonFull)
 		{
-			if (r->entranceDir == nextEntranceDir)
-				potentialNextRooms.push_back(r);
+			// destroy room and its walls
+			DestroyRoom(r);
+			continue;
 		}
 
-		// return if there are no possible rooms
-		if (potentialNextRooms.size() == 0)
+		bool intersect = true;
+		int placeAttempts = 0;
+		while (intersect)
 		{
-			std::cerr << "Error: no rooms with suitable entrance" << std::endl;
-			return;
-		}
+			int nodeGridWidth = mNodeGrid[0].size();
+			int nodeGridHeight = mNodeGrid.size();
+			// pick random position
+			int xIndex = rand() % (int)(mNodeGrid[0].size() - r->GetSize().x); // row length
+			int yIndex = rand() % (int)(mNodeGrid.size() - r->GetSize().y); // number of columns
 
-		// pick random potential room
-		_rand = rand() % potentialNextRooms.size();
-		struct Room* currentRoom;
-		currentRoom = Clone(potentialNextRooms[_rand]);
-		
-		// set room position
-		currentRoom->position = SetRoomPosition(currentRoom, mRooms.back());
+			Vector2 roomPos = mNodeGrid[xIndex][yIndex]->GetPosition();
+			// set corner to node position
+			roomPos += (Vector2((r->GetSize().x * 0.5f - 1.5f) * mCsvSize.x, (r->GetSize().y * 0.5f - 1.5f) * mCsvSize.y));
+			r->SetPosition(roomPos);
 
-		// check if room intersects
-		bool intersect = false;
-		for (class Room* r : mRooms)
-		{
-			if (Intersect(currentRoom, r))
+			// check overlap
+			intersect = false;
+			for (Room* other : positionedRooms)
 			{
-				intersect = true;
-				break;
-			}
-		}
+				CollisionComponent* thisCC = r->GetComponent<CollisionComponent>();
+				CollisionComponent* otherCC = other->GetComponent<CollisionComponent>();
 
-		if (intersect)
-		{
-			// dont add this room
-			// redo previous room, because this direction yields an overlap
-			if (!mRooms.empty())
-			{
-				mRooms.pop_back(); // initial go back a room
-				i-=2; // because we're redoing this room and the room before it
-				intersectingRooms++;
-			}
-			else
-			{
-				std::cerr << "Error: Room vector empty while intersect true. Cannot go back a room" << std::endl;
-				mRooms.clear();
-				return;
-			}
-
-			/*
-			// go back more rooms based off of how many intersects we have done
-			int normalRoomCount = mGame->GetNormalRooms().size();
-			int roomsToRetrace = intersectingRooms % normalRoomCount;
-			for (int i = 0; i < roomsToRetrace; i++)
-			{
-				if (mRooms.empty())
+				intersect = thisCC->Intersect(otherCC);
+				if (intersect)
 					break;
-				mRooms.pop_back();
-				i--;
 			}
-			*/
-		}
-		else
-		{
-			// continue as normal
-			// add room
-			mRooms.push_back(currentRoom);
-		}
-		
-		if (mRooms.empty())
-		{
-			std::cerr << "Error: No more rooms" << std::endl;
-			return;
-		}
 
-		if (intersectingRooms >= 100)
-		{
-			std::cerr << "Error: Cannot find non-overlapping setup. Reconstructing dungeon" << std::endl;
-			mRooms.clear();
-			PlaceRooms();
-			return;
+			// check if dungeon is full
+			if (intersect)
+				placeAttempts++;
+
+			if (placeAttempts > 500)
+			{
+				std::cerr << "Error: over 500 room placement attempts" << std::endl;
+				std::cout << "Stopping at " + std::to_string(positionedRooms.size()) + " rooms" << std::endl;
+				// destroy this room and its walls
+				DestroyRoom(r);
+				// continue to all the next rooms and destroy them
+				dungeonFull = true;
+				intersect = false; // just to break out of the while loop
+			}
 		}
+		// on the first loop that dungeonfull, make sure to skip adding room to vector
+		if (dungeonFull)
+			continue;
+
+		// associate rooms and nodes
+		FindNodes(r);
+
+		positionedRooms.push_back(r);
+
+		// position walls (for debugging)
+		for (Wall* w : r->GetWalls())
+			w->SetPosition(w->GetRelativePos() + r->GetPosition());
 	}
-
-	// exit
-
-	// get exit room with correct entrance side
-	OpenSide exitRoomEntrance = GetEntranceDir(mRooms.back()->exitDir);
-
-	// create list of potential rooms with that entrance
-	std::vector<struct Room*> potentialExits;
-	for (struct Room* r : mGame->GetExitRooms())
-	{
-		if (r->entranceDir == exitRoomEntrance)
-			potentialExits.push_back(r);
-	}
-
-	// return if there are no possible rooms
-	if (potentialExits.empty())
-	{
-		std::cerr << "Error: no exits with suitable entrance. Skipping exit room." << std::endl;
-		return;
-	}
-
-	// pick random potential exit
-	struct Room* exit;
-	_rand = rand() % potentialExits.size();
-	exit = Clone(potentialExits[_rand]);
-	// set position
-	exit->position = SetRoomPosition(exit, mRooms.back());
-	// check if it intersects
-	bool exitIntersect = false;
-	for (class Room* r : mRooms)
-	{
-		if (Intersect(exit, r))
-		{
-			exitIntersect = true;
-			break;
-		}
-	}
-	// if it intersects, delete the previous room and make that the exit. One room is lost
-	if (exitIntersect)
-	{
-		std::cout << "Exit intersects. Redrawing..." << std::endl;
-		// dont add the exit
-		// make the previous room the exit
-
-		mRooms.pop_back(); // remove prev room
-
-		// get exit room with correct entrance side
-		OpenSide exitRoomEntrance = GetEntranceDir(mRooms.back()->exitDir);
-
-		// create list of potential rooms with that entrance
-		std::vector<struct Room*> potentialExits;
-		for (struct Room* r : mGame->GetExitRooms())
-		{
-			if (r->entranceDir == exitRoomEntrance)
-				potentialExits.push_back(r);
-		}
-
-		// return if there are no possible rooms
-		if (potentialExits.empty())
-		{
-			std::cerr << "Error: no exits with suitable entrance. Skipping exit room." << std::endl;
-			return;
-		}
-
-		// pick random potential exit
-		_rand = rand() % potentialExits.size();
-		exit = Clone(potentialExits[_rand]);
-
-		// set exit position
-		exit->position = SetRoomPosition(exit, mRooms.back());
-	}
-	// add exit to rooms vector
-	mRooms.push_back(exit);
-	
-	std::cout << "Done! (" + std::to_string(intersectingRooms) + " Room Intersects)" << std::endl;
+	std::cout << "Done!" << std::endl;
 }
 
+void Dungeon::DestroyRoom(Room* room)
+{
+	// destroy room's walls
+	for (Wall* w : room->GetWalls())
+		w->SetState(ActorState::Destroy);
+
+	 // destroy room
+	room->SetState(ActorState::Destroy);
+}
+
+void Dungeon::FindNodes(Room* room)
+{
+	// x coord of left edge
+	int leftEdge = room->GetPosition().x - room->GetSize().x * 0.5f * mCsvSize.x;
+	// x coord in node lengths (three csv sizes)
+	// the left edge is in between nodes so we always want to round up
+	int minNodeX = ceil(leftEdge / (3.0f * mCsvSize.x));
+
+	// y coord of top edge
+	int topEdge = room->GetPosition().y - room->GetSize().y * 0.5f * mCsvSize.y;
+	// y coord in node lengths (three csv sizes)
+	// the top edge is in between nodes so we always want to round up
+	int minNodeY = ceil(topEdge / (3.0f * mCsvSize.y));
+
+	// set max nodes
+	int maxNodeX = minNodeX + floor(room->GetSize().x / 3.0f); // divide room size because it is in csv units and nodes are 3 csv units long
+	if (maxNodeX > mNodeGrid[0].size())
+		maxNodeX = mNodeGrid[0].size();
+
+	int maxNodeY = minNodeY + floor(room->GetSize().y / 3.0f);
+	if (maxNodeY > mNodeGrid.size())
+		maxNodeY = mNodeGrid.size();
+
+	// set nodes
+	for (int j = minNodeY; j < maxNodeY; j++)
+	{
+		for (int i = minNodeX; i < maxNodeX; i++)
+		{
+			Node* node = mNodeGrid[j][i];
+			node->SetRoom(room);
+			node->GetComponent<SpriteComponent>()->SetTexture(mGame->GetTexture("assets/debug/blue.png"));
+			room->AddNode(node);
+		}
+	}
+}
+
+/*
 void Dungeon::DrawRooms()
 {
 	std::cout << "Drawing Rooms..." << std::endl;
@@ -244,18 +257,6 @@ void Dungeon::DrawRooms()
 	std::cout << "Done!" << std::endl;
 }
 
-struct Room* Dungeon::Clone(struct Room* room)
-{
-	struct Room* newRoom = new Room();
-	newRoom->fileName = room->fileName;
-	newRoom->position = room->position;
-	newRoom->size = room->size;
-	newRoom->characters = room->characters;
-	newRoom->entranceDir = room->entranceDir;
-	newRoom->exitDir = room->exitDir;
-
-	return newRoom;
-}
 
 OpenSide Dungeon::GetEntranceDir(OpenSide prevExitDir)
 {
@@ -313,6 +314,7 @@ Vector2 Dungeon::SetRoomPosition(struct Room* currRoom, struct Room* prevRoom)
 
 	return pos;
 }
+*/
 
 void Dungeon::ProgressBar(float percent, std::string string)
 {
@@ -338,41 +340,4 @@ void Dungeon::ProgressBar(float percent, std::string string)
 		std::cout << "\n" << std::endl;
 		std::cout << "\n" << std::endl;
 	}
-}
-
-bool Dungeon::Intersect(class Room* room_a, class Room* room_b)
-{
-	bool case1 = GetMax(room_a).x <= GetMin(room_b).x;
-	bool case2 = GetMax(room_b).x <= GetMin(room_a).x;
-	bool case3 = GetMax(room_a).y <= GetMin(room_b).y;
-	bool case4 = GetMax(room_b).y <= GetMin(room_a).y;
-	if (!case1 && !case2 && !case3 && !case4) {
-		return true;
-	}
-	else {
-		return false;
-	}
-}
-
-Vector2 Dungeon::GetMin(Room* room)
-{
-	Vector2 min = room->position;
-	return min;
-}
-
-Vector2 Dungeon::GetMax(Room* room)
-{
-	Vector2 max;
-	max.x = room->position.x + (room->size.x * mTileSize.x);
-	max.y = room->position.y + (room->size.y * mTileSize.y);
-	return max;
-}
-
-Vector2 Dungeon::GetStartPosition()
-{
-	Vector2 start;
-	start = mRooms.front()->position;
-	start.x += floor(mRooms.front()->size.x * 0.5f) * mTileSize.x;
-	start.y += floor(mRooms.front()->size.y * 0.5f) * mTileSize.y;
-	return start;
 }

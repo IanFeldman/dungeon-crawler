@@ -3,6 +3,7 @@
 #include "math.h"
 #include "collisioncomponent.h"
 #include "AnimatedSprite.h"
+#include "player.h"
 
 Projectile::Projectile(Game* game)
 	:Actor(game)
@@ -13,7 +14,6 @@ Projectile::Projectile(Game* game)
 	,mHitTime(0.0f)
 	,mHitAnimLength(0.5f)
 {
-	SetScale(1.5f);
 	mASprite = new AnimatedSprite(this, 200);
 	std::vector<SDL_Texture*> travelAnim{
 		mGame->GetTexture("assets/projectile/travel/projectile-travel1.png"),

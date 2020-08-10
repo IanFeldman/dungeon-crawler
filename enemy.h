@@ -11,6 +11,7 @@ class Enemy : public Actor
 public:
 	Enemy(class Game* game);
 	void OnUpdate(float deltaTime) override;
+	void Initialize(Vector2 position, EnemyType type);
 	void Shoot(Vector2 target);
 
 private:
@@ -19,8 +20,15 @@ private:
 	class EnemyMove* mEnemyMove;
 	EnemyType mType;
 
-	float mShootRadius;
-	float mShootInterval;
-	float mShootTimer;
+	float mTime;
+	float mStartedShooting;
 	float mProjectileSpeed;
+	bool mShot;
+
+	float mStartedMoving;
+	float mMoveSpeed;
+	float mMoveTime;
+	float mShootTime;
+
+	bool mMoving;
 };

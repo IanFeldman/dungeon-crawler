@@ -8,31 +8,25 @@
 
 EnemyMove::EnemyMove(Actor* owner)
     :MoveComponent(owner)
+    ,mSpeed(200.0f)
+    ,mTime(0.0f)
+    ,mMoveTime(1.0f)
+    ,mShootTime(1.0f)
 {
+    
 }
 
 void EnemyMove::Update(float deltaTime)
 {
+    mTime += deltaTime;
 }
 
-void EnemyMove::Move()
+void EnemyMove::Move(float deltaTime)
 {
-    Vector2 _playerPos = mOwner->GetGame()->GetPlayer()->GetPosition();
-    Vector2 _dirToPlayer = _playerPos - mOwner->GetPosition();
-    Vector2 _move;
-    if (Math::Abs(_dirToPlayer.x) >= Math::Abs(_dirToPlayer.y)) {
-        if (_dirToPlayer.x >= 0)
-            _move = Vector2(32, 0);
-        else
-            _move = Vector2(-32, 0);
-    }
-    else {
-        if (_dirToPlayer.y >= 0)
-            _move = Vector2(0, 32);
-        else
-            _move = Vector2(0, -32);
-    }
+    Vector2 playerPos = mOwner->GetGame()->GetPlayer()->GetPosition();
+    Vector2 dirToPlayer = Vector2::Normalize(playerPos - mOwner->GetPosition());
 
-    Vector2 _newPos(mOwner->GetPosition() + _move);
-    mOwner->SetPosition(_newPos);
+    Vector2 vel = dirToPlayer * mSpeed;
+
+    mOwner->SetPosition(mOwner->GetPosition() + vel * deltaTime);
 }
