@@ -7,6 +7,7 @@ public:
 	Node(class Game* game);
 
 	// getters and setters
+	class Room* GetRoom() { return mParentRoom; }
 	void SetRoom(class Room* parent) { mParentRoom = parent; }
 
 	std::vector<class Node*> GetNeighbors() { return mNeighbors; }
@@ -16,10 +17,13 @@ public:
 	void SetPreviousNode(class Node* node) { mPreviousNode = node; }
 
 	int GetFScore() { return mFScore; }
-	void SetFScore(int score) { mFScore = score; }
+	void SetFScore(float score) { mFScore = score; }
 
 	int GetGScore() { return mGScore; }
-	void SetGScore(int score) { mGScore = score; }
+	void SetGScore(float score) { mGScore = score; }
+
+	int GetHScore() { return mHScore; }
+	void SetHScore(float score) { mHScore = score; }
 
 protected:
 	class CollisionComponent* mCollisionComponent;
@@ -30,6 +34,7 @@ protected:
 
 	std::vector<class Node*> mNeighbors;
 	class Node* mPreviousNode;
-	int mFScore; // total cost
-	int mGScore; // dist to get to this node
+	float mFScore; // total cost
+	float mGScore; // dist to get to this node
+	float mHScore; // heuristic
 };

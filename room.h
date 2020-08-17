@@ -14,6 +14,9 @@ public:
 	void AddNode(class Node* node) { mNodes.push_back(node); }
 	std::vector<class Node*> GetNodes() { return mNodes; }
 
+	void AddRoom(class Room* room) { mConnectedRooms.push_back(room); }
+	std::vector<class Room*> GetConnectedRooms() { return mConnectedRooms; }
+
 private:
 	class SpriteComponent* mSpriteComponent;
 	class CollisionComponent* mCollisionComponent;
@@ -21,4 +24,5 @@ private:
 	const char* mFileName;
 	std::vector<class Wall*> mWalls;
 	std::vector<class Node*> mNodes;
+	std::vector<class Room*> mConnectedRooms;
 };
