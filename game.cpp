@@ -257,10 +257,10 @@ void Game::CreateRooms()
     /*
     Room* r1 = new Room(this, Vector2(3, 3), (const char*)"assets/dungeon/rooms/3x3test.csv");
     mAllRoomTypes.push_back(r1);
-    */
 
     Room* r2 = new Room(this, Vector2(3, 6), (const char*)"assets/dungeon/rooms/3x6test.csv");
     mAllRoomTypes.push_back(r2);
+    */
 
     Room* r3 = new Room(this, Vector2(6, 15), (const char*)"assets/dungeon/rooms/6x15test.csv");
     mAllRoomTypes.push_back(r3);

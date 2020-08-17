@@ -263,238 +263,125 @@ void Dungeon::FindNodes(Room* room)
 	}
 }
 
-//void Dungeon::ConnectRooms()
-//{
-//	// connect all rooms with minimum spanning tree
-//	std::cout << "Connecting Rooms..." << std::endl;
-//
-//	// construct initial graph
-//	std::set<Room*> graphVertices; // set of rooms
-//	std::map <std::set<Room*>, float> graphEdges; // map of edges as keys, and cost as entry
-//
-//	for (Room* r : mRooms)
-//	{
-//		// add all rooms to vertex set
-//		graphVertices.emplace(r);
-//		
-//		// create edges
-//		for (Room* other : mRooms)
-//		{
-//			// ignore if rooms are the same
-//			if (other == r)
-//				continue;
-//
-//			// create edge
-//			std::set<Room*> edge;
-//			edge.emplace(r);
-//			edge.emplace(other);
-//			// cost is distance
-//			float cost = (other->GetPosition() - r->GetPosition()).Length();
-//			// add to edges map
-//			graphEdges.emplace(edge, cost);
-//		}
-//	}
-//
-//	// prims algorithm finds min spanning tree
-//	std::set<std::set<Room*>> tree; // set of edges that will be the final tree
-//
-//	// start with a vertex
-//	Room* initialVertex = *graphVertices.begin();
-//
-//	// find all edges that contain this vertex
-//	std::set<std::set<Room*>> potentialEdges;
-//	for (auto it = graphEdges.begin(); it != graphEdges.end(); it++) // iterate over all edges
-//	{
-//		std::set<Room*> graphEdge = it->first;
-//		if (graphEdge.find(initialVertex) != graphEdge.end()) // if edge contains init vertex, add edge to potential edges
-//			potentialEdges.emplace(graphEdge); 
-//	}
-//	int minWeight = INT32_MAX;
-//	std::set<Room*> cheapestEdge;
-//	for (std::set<Room*> edge : potentialEdges) // iterate over potential edges to find the cheapest one
-//	{
-//		if (graphEdges[edge] < minWeight)
-//		{
-//			cheapestEdge = edge;
-//			minWeight = graphEdges[edge];
-//		}
-//	}
-//	tree.emplace(cheapestEdge);
-//
-//	while (tree.size() < graphVertices.size() - 1)
-//	{
-//		std::set<Room*> treeVertices;
-//		// for each edge in the tree
-//		for (std::set<Room*> treeEdge : tree)
-//		{
-//			// for each vertex in each edge
-//			for (Room* treeVert : treeEdge)
-//			{
-//				treeVertices.emplace(treeVert);
-//			}
-//		}
-//
-//		// find all edges in graph that contain one of tree's vertices
-//		potentialEdges.clear();
-//		// for every vertex in the tree
-//		for (Room* vertex : treeVertices)
-//		{
-//			// for every edge in the graph
-//			for (auto it = graphEdges.begin(); it != graphEdges.end(); it++)
-//			{
-//				std::set<Room*> graphEdge = it->first;
-//				if (graphEdge.find(initialVertex) != graphEdge.end()) // if edge contains init vertex, add edge to potential edges
-//					potentialEdges.emplace(graphEdge);
-//			}
-//		}
-//
-//		// weed out the edges that are already in the tree
-//		std::set<std::set<Room*>> tempEdges = potentialEdges;
-//		potentialEdges.clear();
-//		// for all potential edges
-//		for (std::set<Room*> edge : tempEdges)
-//		{
-//			// if the edge is not in the tree, keep it
-//			if (tree.find(edge) == tree.end())
-//				potentialEdges.emplace(edge);
-//		}
-//
-//		// pick cheapest potential edge
-//		minWeight = INT32_MAX;
-//		cheapestEdge.clear();
-//		for (std::set<Room*> edge : potentialEdges) // iterate over potential edges to find the cheapest one
-//		{
-//			if (graphEdges[edge] < minWeight)
-//			{
-//				cheapestEdge = edge;
-//				minWeight = graphEdges[edge];
-//			}
-//		}
-//		if (!cheapestEdge.empty())
-//			tree.emplace(cheapestEdge);
-//		else
-//		{
-//			std::cerr << "Could not find cheapest edge" << std::endl;
-//			return;
-//		}
-//	}
-//
-//	// add back in some edges
-//	//int addedEdgeCount = 0.15f * graphEdges.size();
-//	//for (int i = 0; i < addedEdgeCount; i++)
-//	//{
-//	//	int random = rand() % graphEdges.size();
-//
-//	//	auto it = graphEdges.begin();
-//	//	std::advance(it, random);
-//
-//	//	std::set<Room*> edge = it->first;
-//
-//	//	// only add it if it isn't already in tree
-//	//	if (tree.find(edge) == tree.end())
-//	//		tree.emplace(edge);
-//	//}
-//	mMinSpanningTree = tree;
-//
-//	std::cout << "Done!" << std::endl;
-//}
-
 void Dungeon::ConnectRooms()
 {
+	// connect all rooms with minimum spanning tree
 	std::cout << "Connecting Rooms..." << std::endl;
-	// set of edges
-	std::set<std::set<Room*>> tree;
 
-	Room* initRoom = mRooms[0];
+	// construct initial graph
+	std::set<Room*> graphVertices; // set of rooms
+	std::map <std::set<Room*>, float> graphEdges; // map of edges as keys, and cost as entry
 
-	// find closest room and create shortest edge possible to add to tree
-	float minDist = INT32_MAX;
-	Room* closestRoom = nullptr;
 	for (Room* r : mRooms)
 	{
-		if (r == initRoom)
-			continue;
-
-		float dist = (r->GetPosition() - initRoom->GetPosition()).Length();
-		if (dist < minDist)
+		// add all rooms to vertex set
+		graphVertices.emplace(r);
+		
+		// create edges
+		for (Room* other : mRooms)
 		{
-			closestRoom = r;
-			minDist = dist;
+			// ignore if rooms are the same
+			if (other == r)
+				continue;
+
+			// create edge
+			std::set<Room*> edge;
+			edge.emplace(r);
+			edge.emplace(other);
+			// cost is distance
+			float cost = (other->GetPosition() - r->GetPosition()).Length();
+			// add to edges map
+			graphEdges.emplace(edge, cost);
 		}
 	}
 
-	std::set<Room*> firstEdge;
-	firstEdge.emplace(initRoom);
-	firstEdge.emplace(closestRoom);
-	tree.emplace(firstEdge);
+	// prims algorithm finds min spanning tree
+	std::set<std::set<Room*>> tree; // set of edges that will be the final tree
+	std::set<Room*> treeVerts; // set of vertices in the tree
+	
+	// start with a vertex
+	Room* initVertex = *graphVertices.begin();
+	treeVerts.emplace(initVertex);
 
-	for (int i = 1; i < mRooms.size() - 1; i++)
+	while (tree.size() < graphVertices.size() - 1)
 	{
-		// map of edges and their weights
-		std::map<std::set<Room*>, float> potentialEdges;
+		std::set<std::set<Room*>> potentialEdges;
 
-		for (std::set<Room*> edge : tree)
+		// for every vertex in the tree
+		for (Room* v : treeVerts)
 		{
-			// get smallest edge with each room in tree
-			for (Room* room : edge)
+			// for every edge in the graph
+			for (auto it = graphEdges.begin(); it != graphEdges.end(); it++)
 			{
-				std::vector<Room*> possibleRooms;
-				possibleRooms = mRooms;
-
-				bool inTree = true;
-				while (inTree)
-				{
-					// find closest room for every room
-					float min = INT32_MAX;
-					Room* closest = nullptr;
-					for (Room* r : possibleRooms)
-					{
-						if (r == room)
-							continue;
-
-						float distance = (r->GetPosition() - initRoom->GetPosition()).Length();
-						if (distance < min)
-						{
-							closest = r;
-							min = distance;
-						}
-					}
-
-					std::set<Room*> newEdge;
-					newEdge.emplace(room);
-					newEdge.emplace(closest);
-
-					// if the new edge is not part of the tree, break and emplace
-					if (tree.find(newEdge) == tree.end())
-					{
-						inTree = false;
-						potentialEdges.emplace(newEdge, min);
-					}
-					else
-					{
-						// remove the closest room from possible rooms
-						auto it = std::find(possibleRooms.begin(), possibleRooms.end(), closest);
-						if (it != possibleRooms.end())
-							possibleRooms.erase(it);
-					}
-				}
+				std::set<Room*> graphEdge = it->first;
+				if (graphEdge.find(v) != graphEdge.end()) // if edge contains init vertex, add edge to potential edges
+					potentialEdges.emplace(graphEdge);
 			}
 		}
 
-		// get shortest edge of them all
-		std::set<Room*> smallestEdge;
-		float shortestLength = INT32_MAX;
-		for (auto it = potentialEdges.begin(); it != potentialEdges.end(); it++)
+		// weed out the edges that are already in the tree
+		std::set<std::set<Room*>> tempEdges = potentialEdges;
+		potentialEdges.clear();
+		// for all potential edges
+		for (std::set<Room*> edge : tempEdges)
 		{
-			if (potentialEdges[it->first] < shortestLength)
+			bool inTree = (tree.find(edge) != tree.end());
+			
+			int vertsInTree = 0;
+			for (Room* v : edge)
 			{
-				smallestEdge = it->first;
-				shortestLength = potentialEdges[it->first];
+				// find edge in tree verts
+				if (treeVerts.find(v) != treeVerts.end())
+					vertsInTree++;
+			}
+
+			// if the edge is not in the tree and only one vertex is part of the tree, keep it
+			if (!inTree && vertsInTree == 1)
+				potentialEdges.emplace(edge);
+		}
+
+		// pick cheapest potential edge
+		int minCost = INT32_MAX;
+		std::set<Room*> cheapestEdge;
+		for (std::set<Room*> edge : potentialEdges) // iterate over potential edges to find the cheapest one
+		{
+			if (graphEdges[edge] < minCost)
+			{
+				cheapestEdge = edge;
+				minCost = graphEdges[edge];
 			}
 		}
-		tree.emplace(smallestEdge);
+		if (!cheapestEdge.empty())
+		{
+			// add edge to tree and add verts to treeVerts
+			tree.emplace(cheapestEdge);
+			for (Room* v : cheapestEdge)
+				treeVerts.emplace(v);
+		}
+		else
+		{
+			std::cerr << "Could not find cheapest edge" << std::endl;
+			return;
+		}
+	}
+
+	// add back in some edges
+	int addedEdgeCount = 0.1f * graphEdges.size();
+	for (int i = 0; i < addedEdgeCount; i++)
+	{
+		int random = rand() % graphEdges.size();
+
+		auto it = graphEdges.begin();
+		std::advance(it, random);
+
+		std::set<Room*> edge = it->first;
+
+		// only add it if it isn't already in tree
+		if (tree.find(edge) == tree.end())
+			tree.emplace(edge);
 	}
 	mMinSpanningTree = tree;
+
 	std::cout << "Done!" << std::endl;
 }
 
@@ -532,7 +419,7 @@ std::pair<Node*, Node*> Dungeon::GetStartAndEndNodes(class Room* start, class Ro
 	std::vector<Node*> potentialStartNodes;
 	for (Node* n : start->GetNodes())
 	{
-		// the node has to be unused and on the edge
+		// the node has to be unused and have a usable neighbor
 		bool nodeUsed = true;
 		bool usableNeighbors = false;
 		nodeUsed = mNodesUsed[n];
@@ -540,7 +427,10 @@ std::pair<Node*, Node*> Dungeon::GetStartAndEndNodes(class Room* start, class Ro
 		{
 			// at least one of the neighbors is not part of the room and isn't used
 			if (neighbor->GetRoom() == nullptr && !mNodesUsed[neighbor])
+			{
 				usableNeighbors = true;
+				break;
+			}
 		}
 
 		if (!nodeUsed && usableNeighbors)
@@ -605,188 +495,6 @@ std::pair<Node*, Node*> Dungeon::GetStartAndEndNodes(class Room* start, class Ro
 	nodes = std::make_pair(startNode, endNode);
 	return nodes;
 }
-
-// greedy best-first search
-//std::vector<Node*> Dungeon::Pathfind(Room* start, Room* end)
-//{
-//	// to push back if there is an error
-//	std::vector<Node*> emptyPath;
-//
-//	// get potential starting nodes
-//	std::vector<Node*> potentialStartNodes;
-//	for (Node* n : start->GetNodes())
-//	{
-//		// the node has to be unused and on the edge
-//		bool nodeUsed = true;
-//		bool usableNeighbors = false;
-//		nodeUsed = mNodesUsed[n];
-//		for (Node* neighbor : n->GetNeighbors())
-//		{
-//			// at least one of the neighbors is not part of the room and isn't used
-//			if (neighbor->GetRoom() == nullptr && !mNodesUsed[neighbor])
-//			{
-//				usableNeighbors = true;
-//				break;
-//			}
-//		}
-//
-//		if (!nodeUsed && usableNeighbors)
-//			potentialStartNodes.push_back(n);
-//	}
-//	if (potentialStartNodes.empty())
-//	{
-//		std::cerr << "No available starting nodes" << std::endl;
-//		return emptyPath;
-//	}
-//
-//	// same process for end node
-//	std::vector<Node*> potentialEndNodes;
-//	for (Node* n : end->GetNodes())
-//	{
-//		// the node has to be unused and on the edge
-//		bool nodeUsed = true;
-//		bool usableNeighbors = false;
-//		nodeUsed = mNodesUsed[n];
-//		for (Node* neighbor : n->GetNeighbors())
-//		{
-//			// at least one of the neighbors is not part of the room and isn't used
-//			if (neighbor->GetRoom() == nullptr && !mNodesUsed[neighbor])
-//			{
-//				usableNeighbors = true;
-//				break;
-//			}
-//		}
-//
-//		if (!nodeUsed && usableNeighbors)
-//			potentialEndNodes.push_back(n);
-//	}
-//	if (potentialEndNodes.empty())
-//	{
-//		std::cerr << "No available starting nodes" << std::endl;
-//		return emptyPath;
-//	}
-//
-//	// get closest combination of start and end node
-//	float minDist = INT32_MAX;
-//	Node* startNode = nullptr;
-//	Node* endNode = nullptr;
-//	for (Node* start : potentialStartNodes)
-//	{
-//		for (Node* end : potentialEndNodes)
-//		{
-//			float dist = (end->GetPosition() - start->GetPosition()).Length();
-//
-//			if (dist < minDist)
-//			{
-//				minDist = dist;
-//				startNode = start;
-//				endNode = end;
-//			}
-//		}
-//	}
-//	if (startNode == nullptr || endNode == nullptr)
-//	{
-//		std::cerr << "Start and/or end node are null" << std::endl;
-//		return emptyPath;
-//	}
-//	startNode->GetComponent<SpriteComponent>()->SetTexture(mGame->GetTexture("assets/debug/yellow.png"));
-//	endNode->GetComponent<SpriteComponent>()->SetTexture(mGame->GetTexture("assets/debug/yellow.png"));
-//
-//	std::vector<Node*> openSet;
-//	openSet.push_back(startNode);
-//
-//	std::vector<Node*> closedSet;
-//
-//	while (true)
-//	{
-//		if (openSet.empty())
-//		{
-//			std::cerr << "No path found" << std::endl;
-//			return emptyPath;
-//		}
-//
-//		// depth first search (stack)
-//		// Node* currentNode = openSet[openSet.size() - 1];
-//		// openSet.pop_back();
-//
-//		// breadth first search (queue)
-//		// Node* currentNode = openSet[0];
-//		// openSet.erase(openSet.begin());
-//
-//		// greedy best first search
-//		Node* currentNode;
-//		float minDist = INT32_MAX;
-//		for (Node* n : openSet)
-//		{
-//			//float dist = (endNode->GetPosition() - n->GetPosition()).Length();
-//			float dist = abs(endNode->GetPosition().x - n->GetPosition().x) + abs(endNode->GetPosition().y - n->GetPosition().y);
-//			if (dist < minDist)
-//			{
-//				currentNode = n;
-//				minDist = dist;
-//				break;
-//			}
-//		}
-//		// remove current node form open set
-//		auto it = std::find(openSet.begin(), openSet.end(), currentNode);
-//		if (it != openSet.end())
-//		{
-//			openSet.erase(it);
-//		}
-//
-//		if (currentNode == endNode)
-//		{
-//			// the end
-//			// reconstruct path
-//			std::vector<Node*> path;
-//			path.push_back(currentNode);
-//
-//			Node* tempNode = currentNode;
-//			while (tempNode->GetPreviousNode() != nullptr)
-//			{
-//				tempNode = tempNode->GetPreviousNode();
-//				path.push_back(tempNode);
-//			}
-//
-//			for (Node* n : path)
-//			{
-//				mNodesUsed[n] = true;
-//			}
-//			std::cout << "Done!" << std::endl;
-//			return path;
-//		}
-//
-//		closedSet.push_back(currentNode);
-//		for (Node* neighbor : currentNode->GetNeighbors())
-//		{
-//			// if neighbor in open set, skip
-//			auto openIt = std::find(openSet.begin(), openSet.end(), neighbor);
-//			if (openIt != openSet.end())
-//				continue;
-//
-//			// if neighbor in closed set, skip
-//			auto closedIt = std::find(closedSet.begin(), closedSet.end(), neighbor);
-//			if (closedIt != closedSet.end())
-//				continue;
-//
-//			// if neighbor is associated with a room and that neighbor is not the final node, then skip this neighbor
-//			if (neighbor->GetRoom() != nullptr && neighbor != endNode)
-//			{
-//				closedSet.push_back(neighbor);
-//				continue;
-//			}
-//			// if the neighbor is already used, skip to next neighbor
-//			else if (mNodesUsed[neighbor])
-//			{
-//				closedSet.push_back(neighbor);
-//				continue;
-//			}
-//
-//			neighbor->SetPreviousNode(currentNode);
-//			openSet.push_back(neighbor);
-//		}
-//	}
-//}
 
 // a star
 std::vector<Node*> Dungeon::Pathfind(Node* startNode, Node* endNode)
