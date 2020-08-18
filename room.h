@@ -1,5 +1,7 @@
 #pragma once
 #include "actor.h"
+#include <SDL.h>
+#include "spritecomponent.h"
 
 class Room : public Actor
 {
@@ -17,9 +19,13 @@ public:
 	void AddRoom(class Room* room) { mConnectedRooms.push_back(room); }
 	std::vector<class Room*> GetConnectedRooms() { return mConnectedRooms; }
 
+	void SetSprite(SDL_Texture* texture) { mSprite = texture; mSpriteComponent->SetTexture(texture); }
+	SDL_Texture* GetSprite() { return mSprite; }
+
 private:
 	class SpriteComponent* mSpriteComponent;
 	class CollisionComponent* mCollisionComponent;
+	SDL_Texture* mSprite;
 	Vector2 mSize;
 	const char* mFileName;
 	std::vector<class Wall*> mWalls;

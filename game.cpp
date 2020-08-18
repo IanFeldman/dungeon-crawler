@@ -233,6 +233,7 @@ void Game::LoadData()
 
     mDungeon = new Dungeon(this);
     mDungeon->GenerateLevel();
+    RemoveExampleRooms();
     
     mCamera = new Camera;
     mCamera->position = Vector2::Zero;
@@ -242,13 +243,12 @@ void Game::LoadData()
     //Vector2 playerPos = Vector2(mWallSize.x, mWallSize.y);
     mPlayer->SetPosition(Vector2::Zero);
 
-    //class Enemy* enemy = new Enemy(this);
-    //enemy->Initialize(Vector2(-10.0f, -10.0f), EnemyType::Normal);
-    //mEnemies.push_back(enemy);
+    class Enemy* enemy = new Enemy(this);
+    enemy->Initialize(Vector2(-10.0f, -10.0f), EnemyType::Normal);
+    mEnemies.push_back(enemy);
 
     // Removes the rooms initialized here as the different room types
     // also removes the walls that were generated with them
-    RemoveExampleRooms();
 }
 
 
@@ -265,15 +265,14 @@ void Game::CreateRooms()
     Room* r3 = new Room(this, Vector2(6, 15), (const char*)"assets/dungeon/rooms/6x15test.csv");
     mAllRoomTypes.push_back(r3);
 
-    Room* r4 = new Room(this, Vector2(9, 15), (const char*)"assets/dungeon/rooms/9x15test.csv");
-    mAllRoomTypes.push_back(r4);
+    //Room* r4 = new Room(this, Vector2(9, 15), (const char*)"assets/dungeon/rooms/9x15test.csv");
+    //mAllRoomTypes.push_back(r4);
 
-    Room* r5 = new Room(this, Vector2(12, 6), (const char*)"assets/dungeon/rooms/12x6test.csv");
-    mAllRoomTypes.push_back(r5);
+    //Room* r5 = new Room(this, Vector2(12, 6), (const char*)"assets/dungeon/rooms/12x6test.csv");
+    //mAllRoomTypes.push_back(r5);
 
-    Room* r6 = new Room(this, Vector2(21, 21), (const char*)"assets/dungeon/rooms/21x21test.csv");
-    mAllRoomTypes.push_back(r6);
-
+    //Room* r6 = new Room(this, Vector2(21, 21), (const char*)"assets/dungeon/rooms/21x21test.csv");
+    //mAllRoomTypes.push_back(r6);
 }
 
 void Game::PreloadRooms()
@@ -281,6 +280,14 @@ void Game::PreloadRooms()
     // load in all csv data
     for (Room* r : mAllRoomTypes)
     {
+        // create blank texture to start
+        SDL_Texture* finalTex = SDL_CreateTexture(mRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, r->GetSize().x * mCsvSize.x, r->GetSize().y * mCsvSize.y);
+        // set render target to texture
+        SDL_SetRenderTarget(mRenderer, finalTex);
+
+        SDL_Texture* floor = GetTexture("assets/floor.png");
+
+
         std::ifstream inFile;
         inFile.open(r->GetFileName());
         if (!inFile) {
@@ -298,15 +305,34 @@ void Game::PreloadRooms()
                     std::getline(inFile, temp, ',');
 
                 char tempChar = temp[0];
+                
+                // add walls
                 if (tempChar == 'w')
                 {
                     // set the relative wall position as world coordinates
-                    Vector2 wallPos = Vector2((i * mCsvSize.x) - (r->GetSize().x * 0.5f * mCsvSize.x) + (mCsvSize.x * 0.5f), (j * mCsvSize.y) - (r->GetSize().y * 0.5f * mCsvSize.y) + (mCsvSize.x * 0.5f));
+                    Vector2 wallPos = Vector2((i * mCsvSize.x) - (r->GetSize().x * 0.5f * mCsvSize.x) + (mCsvSize.x * 0.5f), (j * mCsvSize.y) - (r->GetSize().y * 0.5f * mCsvSize.y) + (mCsvSize.y * 0.5f));
                     Wall* wall = new Wall(this, wallPos, r);
                     r->AddWall(wall);
                 }
+
+                // set texture if we are at a point that is a multiple of 3
+                if (j % 3 == 0 && i % 3 == 0)
+                {
+                    SDL_Rect* rect = new SDL_Rect;
+                    rect->x = i * mCsvSize.x;
+                    rect->y = j * mCsvSize.y;
+                    rect->w = 96;
+                    rect->h = 96;
+                    SDL_RenderCopy(mRenderer, floor, NULL, rect);
+                }
+
             }
         }
+
+        // reset render target
+        SDL_SetRenderTarget(mRenderer, NULL);
+        // set final texture
+        r->SetSprite(finalTex);
     }
 }
 

@@ -98,7 +98,7 @@ void Dungeon::PickRooms()
 	// create mRoomCount number of rooms, and make each one a clone of a random room type initialized in mgame
 	std::cout << "Picking Rooms..." << std::endl;
 
-	std::vector<Room*> mRoomTypes = mGame->GetRoomTypes();
+	std::vector<Room*> roomTypes = mGame->GetRoomTypes();
 
 	// entrance
 	// exit
@@ -108,8 +108,8 @@ void Dungeon::PickRooms()
 
 	for (int i = 0; i < mRoomCount; i++)
 	{
-		int random = rand() % mRoomTypes.size();
-		mInitialRooms.push_back(Clone(mRoomTypes[random]));
+		int random = rand() % roomTypes.size();
+		mInitialRooms.push_back(Clone(roomTypes[random]));
 	}
 
 	std::cout << "Done!" << std::endl;
@@ -120,6 +120,8 @@ Room* Dungeon::Clone(Room* room)
 	// create a new room that is nearly identical to room
 
 	Room* newRoom = new Room(mGame, room->GetSize(), nullptr);
+
+	newRoom->SetSprite(room->GetSprite());
 
 	// clone walls also
 	for (Wall* w : room->GetWalls())
@@ -366,6 +368,7 @@ void Dungeon::ConnectRooms()
 	}
 
 	// add back in some edges
+	/*
 	int addedEdgeCount = 0.1f * graphEdges.size();
 	for (int i = 0; i < addedEdgeCount; i++)
 	{
@@ -380,6 +383,7 @@ void Dungeon::ConnectRooms()
 		if (tree.find(edge) == tree.end())
 			tree.emplace(edge);
 	}
+	*/
 	mMinSpanningTree = tree;
 
 	std::cout << "Done!" << std::endl;
